@@ -136,7 +136,9 @@ if clang++ -std=c++17 -o "${RELOC}/smoke" "${SMOKE}" \
      -framework CoreServices -framework CoreGraphics -framework OpenGL \
      -framework Metal -framework AppKit \
      -liconv -lbz2 -lz 2>"${RELOC}/link.err"; then
-    if out=$( "${RELOC}/smoke" 2>&1 ); then
+    # Run from inside the relocated bundle: the test writes verify.xlsx to its
+    # working directory, which must not be the source tree. Matches the ps1 leg.
+    if out=$( cd "${RELOC}" && ./smoke 2>&1 ); then
         echo "    OK - ${out}"
     else
         echo "    RAN BUT FAILED: ${out}"

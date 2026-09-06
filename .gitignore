@@ -11,6 +11,11 @@ output
 spm-artifacts
 submodules/*.log
 
+# Byproducts of verify_bundle.sh, both of which change on every run: the log
+# records the PID-named temp directory, and the xlsx carries zip timestamps.
+/build_usable.log
+/verify.xlsx
+
 # --- Windows leg (build_windows.ps1) ---
 BUILD_INFO.json
 # Anchored: an unanchored "wxWidgets" would also match submodules/wxWidgets.
