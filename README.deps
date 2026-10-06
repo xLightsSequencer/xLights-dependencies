@@ -40,7 +40,7 @@ FFmpeg is downloaded, not built
   submodule (which the macOS leg compiles) is on a different tag.
 
 Windows build prerequisites
-  Visual Studio (2022 or newer) supplies cl, msbuild, cmake and ninja - env.ps1
+  Visual Studio 2026 supplies cl, msbuild, cmake and ninja - env.ps1
   imports the dev environment and finds them inside the VS install, so no
   separate cmake/ninja install is needed. Additionally required:
     * git
@@ -53,7 +53,7 @@ Windows build prerequisites
 New submodule: zlib
   macOS and Linux take zlib from the system, so this repo never needed it.
   Windows has no system zlib and two things require it - libxlsxwriter links
-  it, and xLights links z.lib - so zlib is now a submodule (pinned v1.3.1) and
+  it, and xLights links z.lib - so zlib is now a submodule (pinned v1.3.2) and
   is built by the Windows leg only.
 
 liquidfun needs working-tree patching
@@ -90,7 +90,7 @@ TLS on Apple platforms: OpenSSL + Apple SecTrust
 
   Verified with live handshakes rather than by reading configure output:
 
-      libcurl/8.21.0 OpenSSL/3.6.4
+      libcurl/8.22.0 OpenSSL/3.6.5
       default                 http=200  negotiated=TLSv1.3
       min TLS1.3              http=200  negotiated=TLSv1.3
       max TLS1.2 (control)    http=200  negotiated=TLSv1.2
@@ -112,11 +112,11 @@ Known version skew to resolve
             7.x/8.x) and cannot be pinned, so xLights supports the 6.x/7.x/8.x
             range; src-core/media/FFmpegCompat.h declares that floor and
             #errors on FFmpeg 5.x or older.
-    lua     macOS builds 5.4.8; xLights Windows links lua5.3.5-static.lib;
+    lua     macOS builds 5.4.9; xLights Windows links lua5.3.5-static.lib;
             Linux uses distro liblua5.3-dev. The Windows bundle emits lua.lib,
             so xLights' #pragma comment(lib, "lua5.3.5-static.lib") must be
             updated -- and the 5.3 -> 5.4 API change checked.
-    wx      macOS pins xlights_2026.13; xLights win_CI.yml builds wxWidgets
+    wx      macOS pins xlights_2026.19; xLights win_CI.yml builds wxWidgets
             from HEAD. The bundle removes that by shipping the pinned build.
 
   postproc: xLights links postproc.lib, but BtbN's gpl-shared build does not
@@ -139,15 +139,15 @@ drift. Regenerate it when bumping pins.
   wxWidgets     xlights_2026.19               xLights fork; carries patches - upgrade deliberately
   ffmpeg        n8.1                          macOS builds this; Windows downloads the same tag (FFMPEG_VERSION)
   SDL           release-2.32.10               SDL2 line. SDL3 is an API migration, not a bump
-  curl          curl-8_21_0                   TLS via OpenSSL + Apple SecTrust (see above)
-  openssl       openssl-3.6.4                 Apple platforms only; Windows uses Schannel
+  curl          curl-8_22_0                   TLS via OpenSSL + Apple SecTrust (see above)
+  openssl       openssl-3.6.5                 Apple platforms only; Windows uses Schannel
   zstd          v1.5.7                        current
   zlib          v1.3.2                        Windows only; macOS and Linux use the system zlib
-  lua           v5.4.8                        5.5 is available but is an API break; consumers are still inconsistent
+  lua           v5.4.9                        5.5 is available but is an API break; consumers are still inconsistent
   libxlswriter  v1.2.4                        current
   hidapi        hidapi-0.15.0                 current; used for 3D mouse support on macOS and Windows
-  glslang       16.4.0                        = vulkan-sdk-1.4.357.0, matched to SPIRV-Cross
-  SPIRV-Cross   vulkan-sdk-1.4.357.0          matched to glslang via the same Vulkan SDK release
+  glslang       16.6.0                        = vulkan-sdk-1.4.363.0, matched to SPIRV-Cross
+  SPIRV-Cross   vulkan-sdk-1.4.363.0          matched to glslang via the same Vulkan SDK release
   liquidfun     v1.1.0-45-g7f204021           upstream dead since 2014; pin is past the last release
 
   ispc          v1.31.0                       installed via script, not a submodule
