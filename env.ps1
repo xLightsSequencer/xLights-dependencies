@@ -183,6 +183,27 @@ function Install-Artifact {
     else          { Copy-Item $Path $Destination -Force }
 }
 
+# Parse FFMPEG_VERSION (key=value, '#' comments). Every key is required, so a
+# half-edited pin fails here rather than as a confusing 404 or skew later.
+function Read-FFmpegPin {
+    $file = Join-Path $XL_DEPS_DIR 'FFMPEG_VERSION'
+    if (-not (Test-Path $file)) { throw "FFMPEG_VERSION missing at $file" }
+    $pin = @{}
+    foreach ($line in Get-Content $file) {
+        if ($line -match '^\s*([a-z0-9]+)\s*=\s*(\S+)\s*$') { $pin[$Matches[1]] = $Matches[2] }
+    }
+    foreach ($key in 'version', 'release', 'sha256') {
+        if (-not $pin[$key]) { throw "FFMPEG_VERSION: '$key' is missing" }
+    }
+    if (-not ($pin.version -match '^n(\d+\.\d+)(\.\d+)?(-\d+-g([0-9a-f]+))?$')) {
+        throw "FFMPEG_VERSION: version '$($pin.version)' is not an FFmpeg git describe (e.g. n8.1.3 or n8.1.3-9-g29e619e767)"
+    }
+    $pin.branch = $Matches[1]       # BtbN names its per-branch builds by major.minor
+    $pin.commit = $Matches[4]       # abbreviated hash, or $null when version is a bare tag
+    $pin.asset  = "ffmpeg-$($pin.version)-win64-gpl-shared-$($pin.branch).zip"
+    return $pin
+}
+
 # Record the toolset actually used - vcvars sets VCToolsVersion. This goes into
 # the bundle stamp so a mismatched-ABI bug report can be diagnosed from the
 # artifact alone rather than guessed at.

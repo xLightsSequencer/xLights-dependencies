@@ -34,10 +34,32 @@ FFmpeg is downloaded, not built
   libwinpthread-1.dll alongside it in bin64. MSVC links these import libraries
   (verified). So the change is like-for-like.
 
-  Because the pin is a filename rather than a submodule SHA, nothing
+FFmpeg pin
+  Because the Windows pin is a download rather than a submodule SHA, nothing
   structurally forces it to match the macOS leg -- so FFMPEG_VERSION at the
-  repo root is the single pin and build_windows.ps1 FAILS if the ffmpeg
-  submodule (which the macOS leg compiles) is on a different tag.
+  repo root is the single pin for both, and build_windows.ps1 FAILS if the
+  ffmpeg submodule (which the macOS leg compiles) records a different commit.
+
+  It names an exact build, not a branch: a git describe (version), the BtbN
+  release holding a build of that commit (release), and the zip's sha256.
+  BtbN's rolling 'latest' is deliberately not used - it is rebuilt daily from
+  the tip of the release branch, so it can never match a commit the macOS leg
+  compiled, and the same bundle tag would contain different FFmpeg on rebuild.
+
+  BtbN builds release branches, not tags, and prunes its daily autobuilds after
+  about two weeks; only the month-end ones are kept (for about two years). So
+  the pin is normally a month-end build's commit, e.g. n8.1.3-9-g29e619e767 -
+  a few backported fixes past the n8.1.3 tag on the official release/8.1
+  branch. To bump FFmpeg:
+
+    1. Pick the newest month-end autobuild-YYYY-MM-DD-* release on
+       github.com/BtbN/FFmpeg-Builds and its ffmpeg-<describe>-win64-gpl-shared-
+       <major.minor>.zip asset; take the sha256 from its checksums.sha256.
+    2. Write version/release/sha256 into FFMPEG_VERSION.
+    3. Check out the commit from the describe's -g<hash> in submodules/ffmpeg.
+
+  If BtbN ever prunes the pinned release, the Windows build fails at download
+  with a message saying so; it never silently picks up a different build.
 
 Windows build prerequisites
   Visual Studio 2026 supplies cl, msbuild, cmake and ninja - env.ps1
@@ -106,8 +128,9 @@ Known version skew to resolve
   These are the reasons this repo exists; each needs a decision, not a silent
   workaround:
 
-    ffmpeg  RESOLVED - both legs are on n8.1 (submodule + FFMPEG_VERSION),
-            and build_windows.ps1 fails the build if they ever diverge.
+    ffmpeg  RESOLVED - both legs build from the same FFmpeg commit
+            (submodule + FFMPEG_VERSION), and build_windows.ps1 fails the
+            build if they ever diverge. See "FFmpeg pin".
             Linux still uses distro FFmpeg (Ubuntu 24.04 = 6.1, newer =
             7.x/8.x) and cannot be pinned, so xLights supports the 6.x/7.x/8.x
             range; src-core/media/FFmpegCompat.h declares that floor and
@@ -137,7 +160,7 @@ Submodule versions
 drift. Regenerate it when bumping pins.
 
   wxWidgets     xlights_2026.19               xLights fork; carries patches - upgrade deliberately
-  ffmpeg        n8.1                          macOS builds this; Windows downloads the same tag (FFMPEG_VERSION)
+  ffmpeg        n8.1.3-9-g29e619e767          release/8.1 commit; Windows downloads BtbN's build of it (FFMPEG_VERSION)
   SDL           release-2.32.10               SDL2 line. SDL3 is an API migration, not a bump
   curl          curl-8_22_0                   TLS via OpenSSL + Apple SecTrust (see above)
   openssl       openssl-3.6.5                 Apple platforms only; Windows uses Schannel

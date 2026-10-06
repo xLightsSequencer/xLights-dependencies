@@ -40,8 +40,8 @@ $Libraries = @(
     @{ Name = 'libxlswriter';     Script = 'build_libxlswriter.ps1';     Submodule = 'submodules/libxlswriter' }
     @{ Name = 'hidapi';           Script = 'build_hidapi.ps1';           Submodule = 'submodules/hidapi' }
     @{ Name = 'curl';             Script = 'build_curl.ps1';             Submodule = 'submodules/curl' }
-    # FFmpeg is downloaded, not built - but the submodule is still needed so the
-    # version-sync gate below can compare against the tag the macOS leg builds.
+    # FFmpeg is downloaded, not built. Its submodule is not checked out here; the
+    # version-sync gate below reads the commit the macOS leg builds from the tree.
     @{ Name = 'ffmpeg';           Script = 'build_ffmpeg.ps1';           Submodule = @() }
     @{ Name = 'shader_translate'; Script = 'build_shader_translate.ps1'; Submodule = 'submodules/glslang', 'submodules/SPIRV-Cross' }
 )
@@ -54,10 +54,7 @@ $Libraries = @(
 # forces the two to agree. Check it explicitly, or the sync guarantee silently
 # becomes a sync aspiration.
 function Test-FFmpegSync {
-    $versionFile = Join-Path $PSScriptRoot 'FFMPEG_VERSION'
-    if (-not (Test-Path $versionFile)) { throw "FFMPEG_VERSION missing" }
-    $pinned = (Get-Content $versionFile -Raw).Trim()
-    if (-not $pinned) { throw "FFMPEG_VERSION is empty" }
+    $pin = Read-FFmpegPin
 
     Push-Location $PSScriptRoot
     try {
@@ -68,32 +65,36 @@ function Test-FFmpegSync {
         if (-not $entry) { throw "submodules/ffmpeg is not a tracked submodule" }
         $recorded = ($entry -split '\s+')[2]
 
-        # Resolve what FFMPEG_VERSION names upstream. Deliberately NOT
-        # `git describe` in the submodule: the checkout is --depth 1 with no
-        # tags, so describe returns a bare SHA and the comparison would either
-        # fail spuriously or, worse, be silently skipped.
-        $url = & git config -f .gitmodules --get submodule.submodules/ffmpeg.url
-        if (-not $url) { throw "no URL for submodules/ffmpeg in .gitmodules" }
-
-        # Annotated tags need the peeled ref (^{}) to reach the commit;
-        # lightweight tags only have the plain ref. Try peeled, then plain.
-        $expected = $null
-        foreach ($ref in @("refs/tags/$pinned^{}", "refs/tags/$pinned")) {
-            $line = & git ls-remote $url $ref 2>$null | Select-Object -First 1
-            if ($line) { $expected = ($line -split '\s+')[0]; break }
+        if ($pin.commit) {
+            # A describe (n8.1.3-9-g29e619e767) carries the commit itself.
+            $expected = $pin.commit
+            $ok = $recorded.StartsWith($expected)
+        } else {
+            # A bare tag: resolve it upstream. Deliberately NOT `git describe`
+            # in the submodule - it is not checked out on this leg. Annotated
+            # tags need the peeled ref (^{}) to reach the commit; lightweight
+            # tags only have the plain ref. Try peeled, then plain.
+            $url = & git config -f .gitmodules --get submodule.submodules/ffmpeg.url
+            if (-not $url) { throw "no URL for submodules/ffmpeg in .gitmodules" }
+            $expected = $null
+            foreach ($ref in @("refs/tags/$($pin.version)^{}", "refs/tags/$($pin.version)")) {
+                $line = & git ls-remote $url $ref 2>$null | Select-Object -First 1
+                if ($line) { $expected = ($line -split '\s+')[0]; break }
+            }
+            if (-not $expected) {
+                throw "FFmpeg tag '$($pin.version)' not found at $url (is FFMPEG_VERSION's version a real release tag?)"
+            }
+            $ok = ($recorded -eq $expected)
         }
-        if (-not $expected) {
-            throw "FFmpeg tag '$pinned' not found at $url (is FFMPEG_VERSION a real release tag?)"
-        }
 
-        if ($recorded -ne $expected) {
-            throw ("FFmpeg version skew: FFMPEG_VERSION says '$pinned' (commit " +
+        if (-not $ok) {
+            throw ("FFmpeg version skew: FFMPEG_VERSION says '$($pin.version)' (commit " +
                    "$($expected.Substring(0,10))) but submodules/ffmpeg is pinned to " +
                    "$($recorded.Substring(0,10)). The macOS leg builds the submodule and " +
-                   "Windows downloads $pinned, so they must name the same release. " +
-                   "See README.deps.")
+                   "Windows downloads BtbN's build of FFMPEG_VERSION, so they must name " +
+                   "the same commit. See README.deps.")
         }
-        Write-Host "    ffmpeg pin OK: $pinned ($($recorded.Substring(0,10)))" -ForegroundColor DarkGray
+        Write-Host "    ffmpeg pin OK: $($pin.version) ($($recorded.Substring(0,10)))" -ForegroundColor DarkGray
     } finally { Pop-Location }
 }
 
@@ -197,7 +198,8 @@ $stamp = [ordered]@{
     msvc_version  = $XL_MSVC_VERSION
     vs_path       = $XL_VS_PATH
     arch          = $XL_ARCH
-    ffmpeg        = (Get-Content (Join-Path $PSScriptRoot 'FFMPEG_VERSION') -Raw).Trim()
+    ffmpeg        = (Read-FFmpegPin).version
+    ffmpeg_build  = (Read-FFmpegPin).release
 }
 $stamp | ConvertTo-Json | Set-Content (Join-Path $PSScriptRoot 'BUILD_INFO.json')
 

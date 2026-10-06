@@ -15,34 +15,36 @@
 #     risk: MSVC links these import libraries today.
 #
 # Version sync with the macOS leg is enforced, not hoped for: FFMPEG_VERSION at
-# the repo root is the single pin, and check_ffmpeg_sync verifies the macOS
-# submodule is on the same tag. See README.deps.
+# the repo root is the single pin, and build_windows.ps1's Test-FFmpegSync
+# verifies the macOS submodule records the same commit. The download is a fixed
+# BtbN release checked against a pinned sha256 - never BtbN's rolling 'latest',
+# which moves daily and so can never match what the macOS leg compiled.
+# See README.deps.
 
 . "$PSScriptRoot\..\env.ps1"
 
-$versionFile = Join-Path $XL_DEPS_DIR 'FFMPEG_VERSION'
-if (-not (Test-Path $versionFile)) { throw "build_ffmpeg: $versionFile missing" }
-$ffVersion = (Get-Content $versionFile -Raw).Trim()
-if (-not $ffVersion) { throw "build_ffmpeg: FFMPEG_VERSION is empty" }
+$pin = Read-FFmpegPin
 
 # BtbN/FFmpeg-Builds publishes per-release-branch shared builds with import
 # libraries and headers. 'gpl' matches the feature set xLights uses (x264/x265).
-$branch = $ffVersion -replace '^n', ''
-$asset  = "ffmpeg-$ffVersion-latest-win64-gpl-shared-$branch.zip"
-$url    = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/$asset"
+$url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/$($pin.release)/$($pin.asset)"
 
 $work = Join-Path $PSScriptRoot 'ffmpeg-win'
 Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $work | Out-Null
 
-Write-Host "==> ffmpeg $ffVersion -> $url" -ForegroundColor Cyan
+Write-Host "==> ffmpeg $($pin.version) -> $url" -ForegroundColor Cyan
 $zip = Join-Path $work 'ffmpeg.zip'
 $ProgressPreference = 'SilentlyContinue'   # progress stream is enormous in CI logs
 try {
     Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
 } catch {
     throw ("build_ffmpeg: download failed for $url : " + $_.Exception.Message +
-           " (check FFMPEG_VERSION names a branch BtbN still publishes)")
+           " (has BtbN pruned release '$($pin.release)'? See FFMPEG_VERSION.)")
+}
+$actual = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant()
+if ($actual -ne $pin.sha256.ToLowerInvariant()) {
+    throw "build_ffmpeg: sha256 mismatch for $($pin.asset): got $actual, FFMPEG_VERSION pins $($pin.sha256)"
 }
 Expand-Archive -Path $zip -DestinationPath $work -Force
 
