@@ -136,7 +136,7 @@ Submodule versions
 `git submodule status` is the authority - this table is a convenience and can
 drift. Regenerate it when bumping pins.
 
-  wxWidgets     xlights_2026.13               xLights fork; carries patches - upgrade deliberately
+  wxWidgets     xlights_2026.19               xLights fork; carries patches - upgrade deliberately
   ffmpeg        n8.1                          macOS builds this; Windows downloads the same tag (FFMPEG_VERSION)
   SDL           release-2.32.10               SDL2 line. SDL3 is an API migration, not a bump
   curl          curl-8_21_0                   TLS via OpenSSL + Apple SecTrust (see above)
