@@ -172,5 +172,4 @@ drift. Regenerate it when bumping pins.
   glslang       16.6.0                        = vulkan-sdk-1.4.363.0, matched to SPIRV-Cross
   SPIRV-Cross   vulkan-sdk-1.4.363.0          matched to glslang via the same Vulkan SDK release
   liquidfun     v1.1.0-45-g7f204021           upstream dead since 2014; pin is past the last release
-
-  ispc          v1.31.0                       installed via script, not a submodule
+  ispc          v1.32.0                       installed via script, not a submodule
