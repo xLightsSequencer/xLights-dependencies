@@ -46,7 +46,7 @@ export LDFLAGS="-g -O3 -flto=thin ${XL_TARGETS} ${OSX_VERSION_MIN}"
 ./configure "${CURL_TLS_OPTS[@]}" \
     --disable-shared --enable-static \
     --disable-ldap --disable-ldaps --disable-dict --disable-telnet --disable-tftp \
-    --disable-pop3 --disable-imap --disable-smb --disable-smtp \
+    --disable-pop3 --disable-imap --disable-smtp \
     --disable-gopher --disable-rtsp --disable-manual \
     --without-brotli --without-zstd --without-nghttp2 --without-libidn2 --without-libpsl \
     --prefix="${BASE_DEPS_DIR}" \
@@ -62,7 +62,7 @@ export LDFLAGS="-g ${XL_TARGETS} ${OSX_VERSION_MIN}"
 ./configure "${CURL_TLS_OPTS[@]}" \
     --disable-shared --enable-static \
     --disable-ldap --disable-ldaps --disable-dict --disable-telnet --disable-tftp \
-    --disable-pop3 --disable-imap --disable-smb --disable-smtp \
+    --disable-pop3 --disable-imap --disable-smtp \
     --disable-gopher --disable-rtsp --disable-manual \
     --without-brotli --without-zstd --without-nghttp2 --without-libidn2 --without-libpsl \
     --prefix="${BASE_DEPS_DIR}" \

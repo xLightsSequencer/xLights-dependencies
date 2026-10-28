@@ -56,7 +56,7 @@ build_variant() {   # $1=label  $2=cflags  $3=openssl-prefix  $4=destination lib
         --with-openssl="${sslprefix}" --with-apple-sectrust \
         --disable-shared --enable-static \
         --disable-ldap --disable-ldaps --disable-dict --disable-telnet --disable-tftp \
-        --disable-pop3 --disable-imap --disable-smb --disable-smtp \
+        --disable-pop3 --disable-imap --disable-smtp \
         --disable-gopher --disable-rtsp --disable-manual \
         --without-brotli --without-zstd --without-nghttp2 --without-libidn2 --without-libpsl \
         --host=arm-apple-darwin \

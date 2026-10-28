@@ -20,7 +20,7 @@ $build = Join-Path $PSScriptRoot 'curl\build-win-Release'
 $disabledProtocols = @(
     'CURL_DISABLE_DICT', 'CURL_DISABLE_GOPHER', 'CURL_DISABLE_IMAP',
     'CURL_DISABLE_LDAP', 'CURL_DISABLE_LDAPS', 'CURL_DISABLE_POP3',
-    'CURL_DISABLE_RTSP', 'CURL_DISABLE_SMB', 'CURL_DISABLE_SMTP',
+    'CURL_DISABLE_RTSP', 'CURL_DISABLE_SMTP',
     'CURL_DISABLE_TELNET', 'CURL_DISABLE_TFTP'
 ) | ForEach-Object { "-D$_=ON" }
 
