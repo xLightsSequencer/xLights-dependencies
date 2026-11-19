@@ -43,6 +43,8 @@ $Libraries = @(
     # FFmpeg is downloaded, not built. Its submodule is not checked out here; the
     # version-sync gate below reads the commit the macOS leg builds from the tree.
     @{ Name = 'ffmpeg';           Script = 'build_ffmpeg.ps1';           Submodule = @() }
+    # ispc is downloaded, like FFmpeg; ISPC_VERSION is the pin shared with macOS.
+    @{ Name = 'ispc';             Script = 'install_ispc.ps1';           Submodule = @() }
     @{ Name = 'shader_translate'; Script = 'build_shader_translate.ps1'; Submodule = 'submodules/glslang', 'submodules/SPIRV-Cross' }
 )
 
@@ -108,9 +110,11 @@ function Test-FFmpegSync {
 # --depth 1 keeps the checkout cheap; the pinned commits are all release tags,
 # which the server can serve directly.
 function Initialize-Submodules {
-    param([Parameter(Mandatory)][string[]]$Paths)
+    # Not Mandatory: a -Only run of download-only steps (ffmpeg, ispc) has no
+    # submodules at all, and Mandatory rejects the resulting empty list.
+    param([string[]]$Paths)
     $needed = @($Paths | Where-Object {
-        -not (Test-Path (Join-Path $PSScriptRoot ((Join-Path $_ '.git') -replace '/', '\')))
+        $_ -and -not (Test-Path (Join-Path $PSScriptRoot ((Join-Path $_ '.git') -replace '/', '\')))
     })
     if ($needed.Count -eq 0) {
         Write-Host "    all required submodules already checked out" -ForegroundColor DarkGray

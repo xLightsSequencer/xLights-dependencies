@@ -1,0 +1,5 @@
+# The ispc release shipped in bin/ of both bundles. install_ispc.sh (macOS) and
+# submodules/install_ispc.ps1 (Windows) both read this, so the two cannot drift.
+# sha256 is of the Windows asset, ispc-<version>-windows.zip.
+version=v1.32.0
+sha256=148d5cd96abe7501c730d5fbd00f1f0c893b96bfeada38d1811c9b6251e86a5c

@@ -119,6 +119,28 @@ int main() {
     } finally { Pop-Location }
 }
 
+# --- 3. ispc runs from the relocated bundle and is the pinned version --------
+# xLights compiles its .ispc kernels with this copy instead of installing its
+# own, so a missing exe or a stale one would surface as a broken xLights build.
+Write-Host "==> Checking ispc" -ForegroundColor Cyan
+$ispc = Join-Path $reloc 'bin\ispc.exe'
+$want = (Read-IspcPin).version.TrimStart('v')
+if (-not (Test-Path $ispc)) {
+    Write-Host "    MISSING - bin\ispc.exe" -ForegroundColor Red
+    $failures += 'bin\ispc.exe missing'
+} else {
+    $ver = (& $ispc --version 2>&1 | Out-String)
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "    FAILED TO RUN (exit $LASTEXITCODE): $ver" -ForegroundColor Red
+        $failures += 'ispc.exe did not run'
+    } elseif ($ver -notmatch "\b$([regex]::Escape($want))\b") {
+        Write-Host "    WRONG VERSION - wanted $want, got: $($ver.Trim())" -ForegroundColor Red
+        $failures += "ispc.exe is not $want"
+    } else {
+        Write-Host "    OK - ispc $want" -ForegroundColor Green
+    }
+}
+
 Remove-Item -Recurse -Force $reloc -ErrorAction SilentlyContinue
 Write-Host ""
 if ($failures.Count -gt 0) {

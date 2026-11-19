@@ -23,6 +23,7 @@ BUILD_INFO.json
 # Per-library out-of-tree build dirs, created inside each submodule.
 build-win-*/
 /submodules/ffmpeg-win/
+/submodules/ispc-win/
 /submodules/*_win.log
 /.verify-reloc-*/
 

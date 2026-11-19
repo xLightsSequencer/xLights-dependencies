@@ -204,6 +204,24 @@ function Read-FFmpegPin {
     return $pin
 }
 
+# Parse ISPC_VERSION (key=value, '#' comments), the pin shared with
+# install_ispc.sh. Both keys are required.
+function Read-IspcPin {
+    $file = Join-Path $XL_DEPS_DIR 'ISPC_VERSION'
+    if (-not (Test-Path $file)) { throw "ISPC_VERSION missing at $file" }
+    $pin = @{}
+    foreach ($line in Get-Content $file) {
+        if ($line -match '^\s*([a-z0-9]+)\s*=\s*(\S+)\s*$') { $pin[$Matches[1]] = $Matches[2] }
+    }
+    foreach ($key in 'version', 'sha256') {
+        if (-not $pin[$key]) { throw "ISPC_VERSION: '$key' is missing" }
+    }
+    if (-not ($pin.version -match '^v\d+\.\d+\.\d+$')) {
+        throw "ISPC_VERSION: version '$($pin.version)' is not an ispc release tag (e.g. v1.32.0)"
+    }
+    return $pin
+}
+
 # Record the toolset actually used - vcvars sets VCToolsVersion. This goes into
 # the bundle stamp so a mismatched-ABI bug report can be diagnosed from the
 # artifact alone rather than guessed at.
