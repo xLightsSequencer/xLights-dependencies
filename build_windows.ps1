@@ -40,6 +40,9 @@ $Libraries = @(
     @{ Name = 'libxlswriter';     Script = 'build_libxlswriter.ps1';     Submodule = 'submodules/libxlswriter' }
     @{ Name = 'hidapi';           Script = 'build_hidapi.ps1';           Submodule = 'submodules/hidapi' }
     @{ Name = 'curl';             Script = 'build_curl.ps1';             Submodule = 'submodules/curl' }
+    # Mbed TLS is Windows-only here: macOS/iOS use Network.framework and Linux
+    # the distro package.
+    @{ Name = 'mbedtls';          Script = 'build_mbedtls.ps1';          Submodule = 'submodules/mbedtls' }
     # FFmpeg is downloaded, not built. Its submodule is not checked out here; the
     # version-sync gate below reads the commit the macOS leg builds from the tree.
     @{ Name = 'ffmpeg';           Script = 'build_ffmpeg.ps1';           Submodule = @() }

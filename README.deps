@@ -78,6 +78,17 @@ New submodule: zlib
   it, and xLights links z.lib - so zlib is now a submodule (pinned v1.3.2) and
   is built by the Windows leg only.
 
+New submodule: mbedtls
+  Mbed TLS (pinned mbedtls-3.6.8, the 3.6 LTS line) is built by the Windows leg
+  only, static, with the stock mbedtls_config.h. macOS and iOS use
+  Network.framework and Linux uses the distro package, so there is no
+  build_mbedtls.sh. The bundle ships mbedtls.lib, mbedx509.lib and
+  mbedcrypto.lib (lib/ and libdbg/) plus include/mbedtls and include/psa.
+  Consumers must also link bcrypt.lib, and ws2_32.lib if they use
+  net_sockets. 3.6 keeps part of its CMake tree in a nested 'framework'
+  submodule that CMake refuses to configure without; build_mbedtls.ps1 fetches
+  it, since build_windows.ps1 inits submodules non-recursively.
+
 liquidfun needs working-tree patching
   liquidfun is a dormant Box2D fork. Two things break under a current
   toolchain, both patched in the working tree by build_liquidfun.ps1 and
@@ -166,6 +177,7 @@ drift. Regenerate it when bumping pins.
   openssl       openssl-3.6.5                 Apple platforms only; Windows uses Schannel
   zstd          v1.5.7                        current
   zlib          v1.3.2                        Windows only; macOS and Linux use the system zlib
+  mbedtls       mbedtls-3.6.8                 Windows only; 3.6 LTS line. macOS/iOS use Network.framework, Linux the distro package
   lua           v5.4.9                        5.5 is available but is an API break; consumers are still inconsistent
   libxlswriter  v1.2.4                        current
   hidapi        hidapi-0.15.0                 current; used for 3D mouse support on macOS and Windows

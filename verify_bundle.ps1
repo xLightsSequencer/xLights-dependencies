@@ -53,9 +53,10 @@ if ($leaks.Count -gt 0) {
 
 # --- 2. link AND RUN against the relocated bundle ---------------------------
 # Linking alone would not catch a DLL that cannot be loaded, so the smoke test
-# calls into FFmpeg (a DLL) and lua/zstd (static) and is executed.
+# calls into FFmpeg (a DLL) and lua/zstd/mbedtls (static) and is executed.
 Write-Host "==> Linking and running a smoke test against the relocated bundle" -ForegroundColor Cyan
-$required = @('lib\avcodec.lib', 'lib\avformat.lib', 'lib\lua.lib', 'lib\libzstd_static_VS.lib', 'lib\minizip.lib', 'lib\xlsxwriter.lib')
+$required = @('lib\avcodec.lib', 'lib\avformat.lib', 'lib\lua.lib', 'lib\libzstd_static_VS.lib', 'lib\minizip.lib', 'lib\xlsxwriter.lib',
+              'lib\mbedtls.lib', 'lib\mbedx509.lib', 'lib\mbedcrypto.lib')
 $missing = @($required | Where-Object { -not (Test-Path (Join-Path $reloc $_)) })
 if ($missing.Count -gt 0) {
     Write-Host "    SKIPPED - bundle missing: $($missing -join ', ')" -ForegroundColor Red
@@ -73,6 +74,10 @@ extern "C" {
 #include <xlsxwriter.h>
 }
 #include <zstd.h>
+#include <cstring>
+#include <mbedtls/version.h>
+#include <mbedtls/md.h>
+#include <mbedtls/ssl.h>
 int main() {
     unsigned c = avcodec_version(), f = avformat_version();
     lua_State* L = luaL_newstate();
@@ -86,8 +91,27 @@ int main() {
     lxw_workbook* wb = workbook_new("verify.xlsx");
     if (!wb) { printf("xlsxwriter init failed\n"); return 1; }
     workbook_close(wb);
-    printf("avcodec=%u.%u avformat=%u.%u zstd=%s lua=ok minizip=ok xlsxwriter=ok\n",
-           c >> 16, (c >> 8) & 0xff, f >> 16, (f >> 8) & 0xff, ZSTD_versionString());
+    // Mbed TLS: a known-answer SHA-256 through the md layer (mbedcrypto), and
+    // an ssl config init/free so mbedtls.lib and mbedx509.lib must resolve too.
+    static const unsigned char want[32] = {
+        0xba,0x78,0x16,0xbf,0x8f,0x01,0xcf,0xea,0x41,0x41,0x40,0xde,0x5d,0xae,0x22,0x23,
+        0xb0,0x03,0x61,0xa3,0x96,0x17,0x7a,0x9c,0xb4,0x10,0xff,0x61,0xf2,0x00,0x15,0xad };
+    unsigned char got[32];
+    const mbedtls_md_info_t* md = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+    if (!md || mbedtls_md(md, (const unsigned char*)"abc", 3, got) != 0 || memcmp(got, want, 32) != 0) {
+        printf("mbedtls SHA-256(\"abc\") mismatch\n"); return 1;
+    }
+    mbedtls_ssl_config conf;
+    mbedtls_ssl_config_init(&conf);
+    if (mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM,
+                                    MBEDTLS_SSL_PRESET_DEFAULT) != 0) {
+        printf("mbedtls ssl config failed\n"); return 1;
+    }
+    mbedtls_ssl_config_free(&conf);
+    char mbv[18];
+    mbedtls_version_get_string(mbv);
+    printf("avcodec=%u.%u avformat=%u.%u zstd=%s lua=ok minizip=ok xlsxwriter=ok mbedtls=%s\n",
+           c >> 16, (c >> 8) & 0xff, f >> 16, (f >> 8) & 0xff, ZSTD_versionString(), mbv);
     return 0;
 }
 '@ | Set-Content -Encoding Ascii $smoke
@@ -97,7 +121,8 @@ int main() {
         $clArgs = @('/nologo', '/std:c++17', '/EHsc', '/MD', "/I$reloc\include",
                     'smoke.cpp', '/Fe:smoke.exe', '/link', "/LIBPATH:$reloc\lib",
                     'avcodec.lib', 'avformat.lib', 'avutil.lib', 'lua.lib',
-                    'libzstd_static_VS.lib', 'minizip.lib', 'xlsxwriter.lib', 'zlib.lib')
+                    'libzstd_static_VS.lib', 'minizip.lib', 'xlsxwriter.lib', 'zlib.lib',
+                    'mbedtls.lib', 'mbedx509.lib', 'mbedcrypto.lib', 'bcrypt.lib')
         & cl @clArgs 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Host "    LINK FAILED (cl exit $LASTEXITCODE)" -ForegroundColor Red
