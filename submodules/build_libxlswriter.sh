@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 . ../env.sh
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -19,7 +21,16 @@ if ! grep -q 'XL_MINIZIP_LIBRARY' CMakeLists.txt; then
     exit 1
 fi
 
-MZ_OPTS_COMMON="-DUSE_SYSTEM_MINIZIP=ON -DXL_MINIZIP_INCLUDE_DIR=${BASE_DEPS_DIR}/include"
+# Hand CMake a directory holding only minizip/, never the bundle's include/.
+# The patch above adds it as a PRIVATE include, and CMake puts PRIVATE dirs
+# ahead of the project's own include/ - so the bundle's include/ would let the
+# previously installed xlsxwriter headers shadow the ones being built. That
+# went unnoticed while the headers were identical and broke on the first bump
+# that changed them.
+MZ_INC=$( mktemp -d )
+trap 'rm -rf "${MZ_INC}"; git -C "${SCRIPT_DIR}/libxlswriter" reset -q --hard; git -C "${SCRIPT_DIR}/libxlswriter" clean -qfdx' EXIT
+cp -R "${BASE_DEPS_DIR}/include/minizip" "${MZ_INC}/"
+MZ_OPTS_COMMON="-DUSE_SYSTEM_MINIZIP=ON -DXL_MINIZIP_INCLUDE_DIR=${MZ_INC}"
 
 export CXXFLAGS="-g -O3 -flto=thin ${XL_TARGETS} ${OSX_VERSION_MIN} "
 export CFLAGS="-g -O3 -flto=thin ${XL_TARGETS} ${OSX_VERSION_MIN} "

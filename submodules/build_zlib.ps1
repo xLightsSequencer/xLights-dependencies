@@ -16,10 +16,10 @@ foreach ($cfg in @('Release', 'Debug')) {
         '-DZLIB_BUILD_TESTING=OFF', '-DZLIB_INSTALL=OFF')
 
     # Do NOT hardcode the produced file name. It is not stable across releases:
-    # 1.3.1 emitted zlibstatic.lib, while 1.3.2 sets OUTPUT_NAME to
-    # z${zlib_static_suffix} - "zs.lib" on Windows, "zsd.lib" in Debug. With
-    # the shared library and tests disabled exactly one .lib should exist, so
-    # take that and fail loudly if the assumption ever stops holding.
+    # 1.3.1 emitted zlibstatic.lib, 1.3.2 zs.lib / zsd.lib (Debug), and 1.4
+    # libzs.lib / libzsd.lib. With the shared library and tests disabled
+    # exactly one .lib should exist, so take that and fail loudly if the
+    # assumption ever stops holding.
     $libs = @(Get-ChildItem $build -Recurse -Filter '*.lib' -File)
     if ($libs.Count -eq 0) { throw "build_zlib: no static library produced in $build" }
     if ($libs.Count -gt 1) {

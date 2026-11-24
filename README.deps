@@ -170,17 +170,17 @@ Submodule versions
 `git submodule status` is the authority - this table is a convenience and can
 drift. Regenerate it when bumping pins.
 
-  wxWidgets     xlights_2026.19               xLights fork; carries patches - upgrade deliberately
+  wxWidgets     xlights_2026.21               xLights fork; carries patches - upgrade deliberately
   ffmpeg        n8.1.3-9-g29e619e767          release/8.1 commit; Windows downloads BtbN's build of it (FFMPEG_VERSION)
   SDL           release-2.32.10               SDL2 line. SDL3 is an API migration, not a bump
   curl          curl-8_23_0                   TLS via OpenSSL + Apple SecTrust (see above)
   openssl       openssl-3.6.5                 Apple platforms only; Windows uses Schannel
   zstd          v1.6.0                        current; legacy (pre-v0.8) frame decoding now off by default
-  zlib          v1.3.2                        Windows only; macOS and Linux use the system zlib
+  zlib          v1.4                          zlib itself Windows only (macOS and Linux use the system zlib); its contrib/minizip is built on every platform
   mbedtls       mbedtls-3.6.8                 Windows only; 3.6 LTS line. macOS/iOS use Network.framework, Linux the distro package
   lua           v5.4.9                        5.5 is available but is an API break; consumers are still inconsistent
-  libxlswriter  v1.2.4                        current
-  hidapi        hidapi-0.15.0                 current; used for 3D mouse support on macOS and Windows
+  libxlswriter  v1.2.5                        current
+  hidapi        hidapi-0.16.0                 current; used for 3D mouse support on macOS and Windows
   glslang       16.6.0                        = vulkan-sdk-1.4.363.0, matched to SPIRV-Cross
   SPIRV-Cross   vulkan-sdk-1.4.363.0          matched to glslang via the same Vulkan SDK release
   liquidfun     v1.1.0-45-g7f204021           upstream dead since 2014; pin is past the last release

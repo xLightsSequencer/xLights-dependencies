@@ -36,6 +36,21 @@ if ($mzPatched -eq $patched) {
 Set-Content -Path $top -Value $mzPatched -NoNewline
 Write-Host "    redirected system-minizip discovery at the bundle" -ForegroundColor DarkGray
 
+# Point CMake at a directory holding only what libxlsxwriter takes from the
+# bundle - minizip/, zlib.h and zconf.h - never at the bundle's include/. The
+# minizip and zlib dirs are PRIVATE includes, which CMake puts ahead of the
+# project's own include/, so the bundle's include/ would let the previously
+# installed xlsxwriter headers shadow the ones being built. That went unnoticed
+# while the headers were identical and broke on the first bump that changed them.
+$depInc = Join-Path $PSScriptRoot 'libxlswriter\build-win-depinc'
+Remove-Item -Recurse -Force $depInc -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path $depInc | Out-Null
+foreach ($h in @('zlib.h', 'zconf.h', 'minizip')) {
+    $p = Join-Path $XL_INC_DIR $h
+    if (-not (Test-Path $p)) { throw "build_libxlswriter: $h has not been installed into the bundle yet - build_zlib and build_minizip must run first" }
+    Copy-Item $p $depInc -Recurse -Force
+}
+
 try {
 foreach ($cfg in @('Release', 'Debug')) {
     $build = Join-Path $PSScriptRoot "libxlswriter\build-win-$cfg"
@@ -57,9 +72,9 @@ foreach ($cfg in @('Release', 'Debug')) {
         '-DBUILD_SHARED_LIBS=OFF', '-DBUILD_TESTS=OFF', '-DBUILD_EXAMPLES=OFF',
         '-DUSE_SYSTEM_MINIZIP=ON',
         "-DXL_MINIZIP_LIBRARY=$mzLib",
-        "-DXL_MINIZIP_INCLUDE_DIR=$XL_INC_DIR",
+        "-DXL_MINIZIP_INCLUDE_DIR=$depInc",
         "-DZLIB_LIBRARY=$zlibLib",
-        "-DZLIB_INCLUDE_DIR=$XL_INC_DIR")
+        "-DZLIB_INCLUDE_DIR=$depInc")
 
     $built = Get-ChildItem $build -Recurse -Filter 'xlsxwriter*.lib' | Select-Object -First 1
     if (-not $built) { throw "build_libxlswriter: library not produced in $build" }
