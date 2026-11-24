@@ -175,7 +175,7 @@ drift. Regenerate it when bumping pins.
   SDL           release-2.32.10               SDL2 line. SDL3 is an API migration, not a bump
   curl          curl-8_23_0                   TLS via OpenSSL + Apple SecTrust (see above)
   openssl       openssl-3.6.5                 Apple platforms only; Windows uses Schannel
-  zstd          v1.5.7                        current
+  zstd          v1.6.0                        current; legacy (pre-v0.8) frame decoding now off by default
   zlib          v1.3.2                        Windows only; macOS and Linux use the system zlib
   mbedtls       mbedtls-3.6.8                 Windows only; 3.6 LTS line. macOS/iOS use Network.framework, Linux the distro package
   lua           v5.4.9                        5.5 is available but is an API break; consumers are still inconsistent
